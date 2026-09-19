@@ -1,204 +1,218 @@
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+
 const game = document.getElementById("game");
-const bird = document.getElementById("bird");
 
 const scoreText = document.getElementById("score");
 
-const startScreen = document.getElementById("startScreen");
-const gameOverScreen = document.getElementById("gameOverScreen");
+const startScreen =
+    document.getElementById("startScreen");
 
-const startButton = document.getElementById("startButton");
-const restartButton = document.getElementById("restartButton");
+const gameOverScreen =
+    document.getElementById("gameOverScreen");
 
-const finalScore = document.getElementById("finalScore");
+const startButton =
+    document.getElementById("startButton");
 
+const restartButton =
+    document.getElementById("restartButton");
 
-// ============================
-// PENGATURAN GAME
-// ============================
-
-const gravity = 0.35;
-
-const lift = -0.65;
-
-const maxFallSpeed = 8;
-
-const pipeSpeed = 2.4;
-
-const pipeGap = 230;
-
-const pipeWidth = 70;
-
-const pipeInterval = 1150;
+const finalScore =
+    document.getElementById("finalScore");
 
 
-// ============================
-// VARIABEL
-// ============================
+// ==================================================
+// UKURAN GAME
+// ==================================================
 
-let birdY = 45;
+let W = 0;
+let H = 0;
 
-let velocity = 0;
 
-let score = 0;
+// ==================================================
+// BURUNG
+// ==================================================
 
-let gameRunning = false;
+const bird = {
 
-let holding = false;
+    x: 0,
+
+    y: 0,
+
+    radius: 18,
+
+    velocity: 0
+
+};
+
+
+// ==================================================
+// FISIKA
+// ==================================================
+
+const gravity = 0.38;
+
+const flyPower = -0.65;
+
+const maxUpSpeed = -7;
+
+const maxDownSpeed = 8;
+
+
+// ==================================================
+// PIPA
+// ==================================================
 
 let pipes = [];
 
-let lastPipeTime = 0;
+const pipeWidth = 70;
 
-let animationId;
+const pipeGap = 220;
 
+const pipeSpeed = 2.5;
 
-// ============================
-// RESET
-// ============================
+let pipeTimer = 0;
 
-function resetGame() {
-
-    birdY = 45;
-
-    velocity = 0;
-
-    score = 0;
-
-    holding = false;
-
-    lastPipeTime = performance.now();
-
-    scoreText.textContent = "0";
-
-    bird.style.top = birdY + "%";
-
-    bird.style.transform = "rotate(0deg)";
+const pipeDelay = 90;
 
 
-    pipes.forEach(pipe => {
+// ==================================================
+// GAME
+// ==================================================
 
-        pipe.top.remove();
-        pipe.bottom.remove();
+let running = false;
 
-    });
+let holding = false;
 
-    pipes = [];
+let score = 0;
+
+let animationId = 0;
+
+
+// ==================================================
+// RESIZE CANVAS
+// ==================================================
+
+function resizeGame() {
+
+    const rect =
+        game.getBoundingClientRect();
+
+    W = rect.width;
+    H = rect.height;
+
+    canvas.width = W;
+    canvas.height = H;
+
+    if (!running) {
+
+        bird.x = W * 0.25;
+
+        bird.y = H * 0.45;
+
+    }
 }
 
 
-// ============================
+// ==================================================
+// RESET
+// ==================================================
+
+function resetGame() {
+
+    resizeGame();
+
+    bird.x = W * 0.25;
+
+    bird.y = H * 0.45;
+
+    bird.velocity = 0;
+
+    pipes = [];
+
+    pipeTimer = 0;
+
+    score = 0;
+
+    scoreText.textContent = "0";
+
+    finalScore.textContent = "0";
+
+    holding = false;
+}
+
+
+// ==================================================
 // START
-// ============================
+// ==================================================
 
 function startGame() {
 
+    cancelAnimationFrame(animationId);
+
     resetGame();
 
-    gameRunning = true;
+    running = true;
 
     startScreen.style.display = "none";
 
     gameOverScreen.style.display = "none";
 
-    cancelAnimationFrame(animationId);
-
-    animationId = requestAnimationFrame(gameLoop);
+    animationId =
+        requestAnimationFrame(gameLoop);
 }
 
 
-// ============================
+// ==================================================
 // GAME OVER
-// ============================
+// ==================================================
 
 function gameOver() {
 
-    if (!gameRunning) return;
+    if (!running) {
+        return;
+    }
 
-    gameRunning = false;
+    running = false;
 
     holding = false;
 
-    finalScore.textContent = score;
+    finalScore.textContent =
+        score;
 
-    gameOverScreen.style.display = "flex";
+    gameOverScreen.style.display =
+        "flex";
 }
 
 
-// ============================
+// ==================================================
 // BUAT PIPA
-// ============================
+// ==================================================
 
 function createPipe() {
 
-    const gameHeight = game.clientHeight;
-
     const groundHeight = 70;
 
-    const minTop = 80;
+    const minGapY = 120;
 
-    const maxTop =
-        gameHeight -
+    const maxGapY =
+        H -
         groundHeight -
         pipeGap -
-        80;
+        120;
 
-    const topHeight =
+    const gapY =
         Math.random() *
-        (maxTop - minTop) +
-        minTop;
-
-    const bottomHeight =
-        gameHeight -
-        groundHeight -
-        topHeight -
-        pipeGap;
-
-
-    const topPipe = document.createElement("div");
-
-    const bottomPipe = document.createElement("div");
-
-
-    topPipe.className = "pipe top";
-
-    bottomPipe.className = "pipe bottom";
-
-
-    topPipe.style.height =
-        topHeight + "px";
-
-    bottomPipe.style.height =
-        bottomHeight + "px";
-
-
-    topPipe.style.top = "0";
-
-    bottomPipe.style.bottom =
-        groundHeight + "px";
-
-
-    const startX =
-        game.clientWidth + 20;
-
-    topPipe.style.left =
-        startX + "px";
-
-    bottomPipe.style.left =
-        startX + "px";
-
-
-    game.appendChild(topPipe);
-
-    game.appendChild(bottomPipe);
+        (maxGapY - minGapY)
+        +
+        minGapY;
 
 
     pipes.push({
 
-        x: startX,
+        x: W + 20,
 
-        top: topPipe,
-
-        bottom: bottomPipe,
+        gapY: gapY,
 
         passed: false
 
@@ -206,154 +220,77 @@ function createPipe() {
 }
 
 
-// ============================
-// CEK TABRAKAN
-// ============================
-
-function collision(pipe) {
-
-    const birdRect =
-        bird.getBoundingClientRect();
-
-    const topRect =
-        pipe.top.getBoundingClientRect();
-
-    const bottomRect =
-        pipe.bottom.getBoundingClientRect();
-
-
-    // Sedikit perkecil area collision
-    // supaya terasa lebih adil.
-
-    const padding = 7;
-
-
-    const birdLeft =
-        birdRect.left + padding;
-
-    const birdRight =
-        birdRect.right - padding;
-
-    const birdTop =
-        birdRect.top + padding;
-
-    const birdBottom =
-        birdRect.bottom - padding;
-
-
-    const hitTop =
-
-        birdRight > topRect.left &&
-
-        birdLeft < topRect.right &&
-
-        birdTop < topRect.bottom;
-
-
-    const hitBottom =
-
-        birdRight > bottomRect.left &&
-
-        birdLeft < bottomRect.right &&
-
-        birdBottom > bottomRect.top;
-
-
-    return hitTop || hitBottom;
-}
-
-
-// ============================
+// ==================================================
 // UPDATE
-// ============================
+// ==================================================
 
-function update(time) {
-
-    if (!gameRunning) return;
+function update() {
 
 
-    // ========================
+    // ==============================================
     // BURUNG
-    // ========================
+    // ==============================================
 
     if (holding) {
 
-        // TAHAN = TERBANG NAIK
-
-        velocity += lift;
+        bird.velocity += flyPower;
 
     } else {
 
-        // LEPAS = JATUH
-
-        velocity += gravity;
+        bird.velocity += gravity;
 
     }
 
 
-    // Batasi kecepatan
+    if (bird.velocity < maxUpSpeed) {
 
-    if (velocity < -7) {
-        velocity = -7;
-    }
+        bird.velocity =
+            maxUpSpeed;
 
-    if (velocity > maxFallSpeed) {
-        velocity = maxFallSpeed;
     }
 
 
-    birdY += velocity * 0.12;
+    if (bird.velocity > maxDownSpeed) {
+
+        bird.velocity =
+            maxDownSpeed;
+
+    }
 
 
-    bird.style.top =
-        birdY + "%";
+    bird.y +=
+        bird.velocity;
 
 
-    // Rotasi burung mengikuti gerakan
-
-    let rotation =
-        velocity * 4;
-
-    rotation =
-        Math.max(-25, Math.min(70, rotation));
-
-    bird.style.transform =
-        "rotate(" + rotation + "deg)";
-
-
-    // ========================
+    // ==============================================
     // PIPA
-    // ========================
+    // ==============================================
 
-    if (
-        time - lastPipeTime >
-        pipeInterval
-    ) {
+    pipeTimer++;
+
+
+    if (pipeTimer >= pipeDelay) {
 
         createPipe();
 
-        lastPipeTime = time;
+        pipeTimer = 0;
     }
 
 
-    pipes.forEach(pipe => {
+    for (let i = 0; i < pipes.length; i++) {
+
+        const pipe = pipes[i];
 
         pipe.x -= pipeSpeed;
 
 
-        pipe.top.style.left =
-            pipe.x + "px";
-
-        pipe.bottom.style.left =
-            pipe.x + "px";
-
-
+        // ==========================================
         // SCORE
+        // ==========================================
 
         if (
             !pipe.passed &&
-            pipe.x + pipeWidth <
-            bird.offsetLeft
+            pipe.x + pipeWidth < bird.x
         ) {
 
             pipe.passed = true;
@@ -365,128 +302,386 @@ function update(time) {
         }
 
 
+        // ==========================================
         // COLLISION
+        // ==========================================
 
-        if (collision(pipe)) {
+        const birdLeft =
+            bird.x - bird.radius;
 
-            gameOver();
+        const birdRight =
+            bird.x + bird.radius;
+
+        const birdTop =
+            bird.y - bird.radius;
+
+        const birdBottom =
+            bird.y + bird.radius;
+
+
+        const pipeLeft =
+            pipe.x;
+
+        const pipeRight =
+            pipe.x + pipeWidth;
+
+
+        const touchingPipeX =
+            birdRight > pipeLeft &&
+            birdLeft < pipeRight;
+
+
+        if (touchingPipeX) {
+
+            const touchingTopPipe =
+                birdTop < pipe.gapY;
+
+            const touchingBottomPipe =
+                birdBottom >
+                pipe.gapY + pipeGap;
+
+
+            if (
+                touchingTopPipe ||
+                touchingBottomPipe
+            ) {
+
+                gameOver();
+
+                return;
+            }
         }
-
-    });
-
-
-    // Hapus pipa yang sudah lewat
-
-    pipes = pipes.filter(pipe => {
-
-        if (
-            pipe.x <
-            -pipeWidth - 20
-        ) {
-
-            pipe.top.remove();
-
-            pipe.bottom.remove();
-
-            return false;
-        }
-
-        return true;
-    });
+    }
 
 
-    // ========================
-    // TANAH / LANGIT
-    // ========================
+    // ==============================================
+    // HAPUS PIPA
+    // ==============================================
 
-    const gameHeight =
-        game.clientHeight;
+    pipes =
+        pipes.filter(pipe => {
 
-    const birdRect =
-        bird.getBoundingClientRect();
+            return pipe.x > -pipeWidth - 20;
 
-    const gameRect =
-        game.getBoundingClientRect();
+        });
 
 
-    const birdBottom =
-        birdRect.bottom -
-        gameRect.top;
-
-
-    const birdTop =
-        birdRect.top -
-        gameRect.top;
-
-
-    // Jatuh ke tanah
+    // ==============================================
+    // BATAS ATAS
+    // ==============================================
 
     if (
-        birdBottom >=
-        gameHeight - 70
+        bird.y - bird.radius <= 0
     ) {
 
         gameOver();
+
+        return;
     }
 
 
-    // Terbang terlalu tinggi
+    // ==============================================
+    // BATAS BAWAH
+    // ==============================================
 
-    if (birdTop <= 0) {
+    const groundHeight = 70;
+
+
+    if (
+        bird.y + bird.radius >=
+        H - groundHeight
+    ) {
 
         gameOver();
+
+        return;
     }
 }
 
 
-// ============================
-// GAME LOOP
-// ============================
+// ==================================================
+// GAMBAR LANGIT
+// ==================================================
 
-function gameLoop(time) {
+function drawBackground() {
 
-    if (!gameRunning) return;
+    const sky =
+        ctx.createLinearGradient(
+            0,
+            0,
+            0,
+            H
+        );
 
-    update(time);
+    sky.addColorStop(
+        0,
+        "#55b9d9"
+    );
 
-    animationId =
-        requestAnimationFrame(gameLoop);
+    sky.addColorStop(
+        1,
+        "#b5e9f2"
+    );
+
+
+    ctx.fillStyle = sky;
+
+    ctx.fillRect(
+        0,
+        0,
+        W,
+        H
+    );
 }
 
 
-// ============================
-// KONTROL SENTUH
-// ============================
+// ==================================================
+// GAMBAR TANAH
+// ==================================================
 
-game.addEventListener(
+function drawGround() {
+
+    const groundHeight = 70;
+
+    ctx.fillStyle =
+        "#a7a16b";
+
+    ctx.fillRect(
+        0,
+        H - groundHeight,
+        W,
+        groundHeight
+    );
+}
+
+
+// ==================================================
+// GAMBAR PIPA
+// ==================================================
+
+function drawPipes() {
+
+    for (const pipe of pipes) {
+
+
+        // ==========================================
+        // PIPA ATAS
+        // ==========================================
+
+        ctx.fillStyle =
+            "#3c963f";
+
+        ctx.fillRect(
+
+            pipe.x,
+
+            0,
+
+            pipeWidth,
+
+            pipe.gapY
+
+        );
+
+
+        // kepala pipa atas
+
+        ctx.fillStyle =
+            "#55aa58";
+
+        ctx.fillRect(
+
+            pipe.x - 5,
+
+            pipe.gapY - 25,
+
+            pipeWidth + 10,
+
+            25
+
+        );
+
+
+        // ==========================================
+        // PIPA BAWAH
+        // ==========================================
+
+        const bottomY =
+            pipe.gapY + pipeGap;
+
+        const groundHeight = 70;
+
+
+        ctx.fillStyle =
+            "#3c963f";
+
+        ctx.fillRect(
+
+            pipe.x,
+
+            bottomY,
+
+            pipeWidth,
+
+            H -
+            groundHeight -
+            bottomY
+
+        );
+
+
+        // kepala pipa bawah
+
+        ctx.fillStyle =
+            "#55aa58";
+
+        ctx.fillRect(
+
+            pipe.x - 5,
+
+            bottomY,
+
+            pipeWidth + 10,
+
+            25
+
+        );
+
+
+        // border
+
+        ctx.strokeStyle =
+            "#24652a";
+
+        ctx.lineWidth = 3;
+
+
+        ctx.strokeRect(
+
+            pipe.x,
+
+            0,
+
+            pipeWidth,
+
+            pipe.gapY
+
+        );
+
+
+        ctx.strokeRect(
+
+            pipe.x,
+
+            bottomY,
+
+            pipeWidth,
+
+            H -
+            groundHeight -
+            bottomY
+
+        );
+    }
+}
+
+
+// ==================================================
+// GAMBAR BURUNG
+// ==================================================
+
+function drawBird() {
+
+    ctx.font = "40px Arial";
+
+    ctx.textAlign = "center";
+
+    ctx.textBaseline = "middle";
+
+    ctx.fillText(
+        "🐦",
+        bird.x,
+        bird.y
+    );
+}
+
+
+// ==================================================
+// DRAW
+// ==================================================
+
+function draw() {
+
+    drawBackground();
+
+    drawPipes();
+
+    drawGround();
+
+    drawBird();
+}
+
+
+// ==================================================
+// GAME LOOP
+// ==================================================
+
+function gameLoop() {
+
+    if (!running) {
+
+        draw();
+
+        return;
+    }
+
+
+    update();
+
+    draw();
+
+
+    if (running) {
+
+        animationId =
+            requestAnimationFrame(
+                gameLoop
+            );
+    }
+}
+
+
+// ==================================================
+// KONTROL SENTUH
+// ==================================================
+
+canvas.addEventListener(
     "pointerdown",
     function(event) {
 
-        if (
-            event.target.closest("button")
-        ) {
+        if (!running) {
             return;
         }
 
-        if (!gameRunning) {
-            return;
-        }
+        event.preventDefault();
 
         holding = true;
     }
 );
 
 
-game.addEventListener(
+canvas.addEventListener(
     "pointerup",
-    function() {
+    function(event) {
+
+        event.preventDefault();
 
         holding = false;
     }
 );
 
 
-game.addEventListener(
+canvas.addEventListener(
     "pointercancel",
     function() {
 
@@ -495,7 +690,7 @@ game.addEventListener(
 );
 
 
-game.addEventListener(
+canvas.addEventListener(
     "pointerleave",
     function() {
 
@@ -504,25 +699,35 @@ game.addEventListener(
 );
 
 
-// ============================
+// ==================================================
 // TOMBOL
-// ============================
+// ==================================================
 
 startButton.addEventListener(
     "click",
-    startGame
+    function(event) {
+
+        event.preventDefault();
+
+        startGame();
+    }
 );
 
 
 restartButton.addEventListener(
     "click",
-    startGame
+    function(event) {
+
+        event.preventDefault();
+
+        startGame();
+    }
 );
 
 
-// ============================
+// ==================================================
 // KEYBOARD
-// ============================
+// ==================================================
 
 document.addEventListener(
     "keydown",
@@ -550,3 +755,22 @@ document.addEventListener(
         }
     }
 );
+
+
+// ==================================================
+// RESIZE
+// ==================================================
+
+window.addEventListener(
+    "resize",
+    resizeGame
+);
+
+
+// ==================================================
+// MULAI AWAL
+// ==================================================
+
+resizeGame();
+
+draw();
