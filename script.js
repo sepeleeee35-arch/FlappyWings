@@ -11,16 +11,23 @@ const finalScore = document.getElementById("finalScore");
 
 let birdY = 45;
 let velocity = 0;
+
+const gravity = 0.45;
+const jumpPower = -7;
+
 let gameRunning = false;
 let score = 0;
 let pipes = [];
 let pipeTimer = 0;
 
-const gravity = 0.45;
-const jumpPower = -7;
-const pipeSpeed = 3;
-const pipeGap = 170;
 const pipeWidth = 65;
+const pipeGap = 170;
+const pipeSpeed = 3;
+
+
+// =========================
+// RESET GAME
+// =========================
 
 function resetGame() {
     birdY = 45;
@@ -29,18 +36,25 @@ function resetGame() {
     pipeTimer = 0;
 
     scoreText.textContent = "0";
-    bird.style.top = birdY + "%";
 
-    pipes.forEach(function(pipe) {
-        pipe.top.remove();
-        pipe.bottom.remove();
+    pipes.forEach(pipe => {
+        if (pipe.topElement) pipe.topElement.remove();
+        if (pipe.bottomElement) pipe.bottomElement.remove();
     });
 
     pipes = [];
+
+    bird.style.top = birdY + "%";
 }
+
+
+// =========================
+// START GAME
+// =========================
 
 function startGame(event) {
     if (event) {
+        event.preventDefault();
         event.stopPropagation();
     }
 
@@ -51,59 +65,83 @@ function startGame(event) {
     startScreen.style.display = "none";
     gameOverScreen.style.display = "none";
 
-    requestAnimationFrame(gameLoop);
+    bird.style.display = "block";
+
+    gameLoop();
 }
+
+
+// =========================
+// JUMP
+// =========================
 
 function jump(event) {
     if (event) {
         event.preventDefault();
-        event.stopPropagation();
     }
 
-    if (gameRunning) {
-        velocity = jumpPower;
-    }
+    if (!gameRunning) return;
+
+    velocity = jumpPower;
 }
+
+
+// =========================
+// CREATE PIPE
+// =========================
 
 function createPipe() {
     const gameHeight = game.clientHeight;
 
     const minTop = 80;
-    const maxTop = gameHeight - pipeGap - 80;
+    const maxTop = gameHeight - pipeGap - 100;
 
     const topHeight =
-        Math.random() * (maxTop - minTop) + minTop;
+        Math.floor(Math.random() * (maxTop - minTop)) + minTop;
 
     const bottomHeight =
         gameHeight - topHeight - pipeGap;
 
     const topPipe = document.createElement("div");
-    topPipe.className = "pipe top";
-
     const bottomPipe = document.createElement("div");
-    bottomPipe.className = "pipe bottom";
 
+    topPipe.className = "pipe";
+    bottomPipe.className = "pipe";
+
+    topPipe.style.position = "absolute";
+    topPipe.style.width = pipeWidth + "px";
     topPipe.style.height = topHeight + "px";
-    bottomPipe.style.height = bottomHeight + "px";
-
+    topPipe.style.top = "0";
     topPipe.style.left = game.clientWidth + "px";
+
+    bottomPipe.style.position = "absolute";
+    bottomPipe.style.width = pipeWidth + "px";
+    bottomPipe.style.height = bottomHeight + "px";
+    bottomPipe.style.bottom = "0";
     bottomPipe.style.left = game.clientWidth + "px";
 
     game.appendChild(topPipe);
     game.appendChild(bottomPipe);
 
     pipes.push({
-        top: topPipe,
-        bottom: bottomPipe,
         x: game.clientWidth,
-        passed: false
+        topHeight: topHeight,
+        bottomHeight: bottomHeight,
+        passed: false,
+        topElement: topPipe,
+        bottomElement: bottomPipe
     });
 }
 
-function collision(pipe) {
+
+// =========================
+// COLLISION
+// =========================
+
+function checkCollision(pipe) {
     const birdRect = bird.getBoundingClientRect();
-    const topRect = pipe.top.getBoundingClientRect();
-    const bottomRect = pipe.bottom.getBoundingClientRect();
+    const topRect = pipe.topElement.getBoundingClientRect();
+    const bottomRect = pipe.bottomElement.getBoundingClientRect();
 
     const hitTop =
         birdRect.right > topRect.left &&
@@ -118,76 +156,119 @@ function collision(pipe) {
     return hitTop || hitBottom;
 }
 
+
+// =========================
+// GAME OVER
+// =========================
+
 function gameOver() {
     gameRunning = false;
+
     finalScore.textContent = score;
+
     gameOverScreen.style.display = "flex";
 }
+
+
+// =========================
+// UPDATE GAME
+// =========================
 
 function update() {
     if (!gameRunning) return;
 
     velocity += gravity;
-    birdY += velocity * 0.12;
+    birdY += velocity * 0.1;
 
     bird.style.top = birdY + "%";
 
-    if (birdY <= 0) {
-        birdY = 0;
-        velocity = 0;
-    }
-
-    if (birdY >= 90) {
-        gameOver();
-        return;
-    }
-
     pipeTimer++;
 
-    if (pipeTimer >= 100) {
+    if (pipeTimer > 100) {
         createPipe();
         pipeTimer = 0;
     }
 
-    for (let i = pipes.length - 1; i >= 0; i--) {
-        const pipe = pipes[i];
-
+    pipes.forEach(pipe => {
         pipe.x -= pipeSpeed;
 
-        pipe.top.style.left = pipe.x + "px";
-        pipe.bottom.style.left = pipe.x + "px";
+        pipe.topElement.style.left = pipe.x + "px";
+        pipe.bottomElement.style.left = pipe.x + "px";
 
-        if (
-            !pipe.passed &&
-            pipe.x + pipeWidth < game.clientWidth * 0.25
-        ) {
+        if (!pipe.passed && pipe.x + pipeWidth < bird.offsetLeft) {
             pipe.passed = true;
             score++;
+
             scoreText.textContent = score;
         }
 
-        if (collision(pipe)) {
+        if (checkCollision(pipe)) {
             gameOver();
-            return;
+        }
+    });
+
+    pipes = pipes.filter(pipe => {
+        if (pipe.x < -pipeWidth) {
+            pipe.topElement.remove();
+            pipe.bottomElement.remove();
+            return false;
         }
 
-        if (pipe.x < -pipeWidth) {
-            pipe.top.remove();
-            pipe.bottom.remove();
-            pipes.splice(i, 1);
-        }
+        return true;
+    });
+
+    if (birdY < 0 || birdY > 90) {
+        gameOver();
     }
 }
+
+
+// =========================
+// GAME LOOP
+// =========================
 
 function gameLoop() {
     if (!gameRunning) return;
 
     update();
+
     requestAnimationFrame(gameLoop);
 }
 
+
+// =========================
+// BUTTONS
+// =========================
+
 startButton.addEventListener("click", startGame);
+
 restartButton.addEventListener("click", startGame);
 
-game.addEventListener("touchstart", jump, { passive: false });
-game.addEventListener("mousedown", jump);
+
+// =========================
+// TOUCH / MOUSE
+// =========================
+
+game.addEventListener("pointerdown", function(event) {
+
+    // Jangan jalankan jump kalau yang ditekan adalah tombol
+    if (
+        event.target === startButton ||
+        event.target === restartButton ||
+        event.target.closest("button")
+    ) {
+        return;
+    }
+
+    if (gameRunning) {
+        jump(event);
+    }
+});
+
+
+// Keyboard
+document.addEventListener("keydown", function(event) {
+    if (event.code === "Space") {
+        jump(event);
+    }
+});
