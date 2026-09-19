@@ -2,7 +2,11 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    >
 
     <title>Flappy Wings</title>
 
@@ -13,20 +17,35 @@
 
 <div id="game">
 
+    <canvas id="canvas"></canvas>
+
     <div id="score">0</div>
 
-    <div id="bird">🐦</div>
-
     <div id="startScreen">
+
         <h1>Flappy Wings</h1>
+
         <p>Tahan layar untuk terbang</p>
-        <button id="startButton">MULAI</button>
+
+        <button id="startButton">
+            MULAI
+        </button>
+
     </div>
 
     <div id="gameOverScreen">
+
         <h1>Game Over</h1>
-        <p>Skor: <span id="finalScore">0</span></p>
-        <button id="restartButton">MAIN LAGI</button>
+
+        <p>
+            Skor:
+            <span id="finalScore">0</span>
+        </p>
+
+        <button id="restartButton">
+            MAIN LAGI
+        </button>
+
     </div>
 
 </div>
