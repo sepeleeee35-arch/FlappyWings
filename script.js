@@ -11,18 +11,16 @@ const finalScore = document.getElementById("finalScore");
 
 let birdY = 45;
 let velocity = 0;
-let gravity = 0.45;
-let jumpPower = -7;
-
 let gameRunning = false;
 let score = 0;
-
 let pipes = [];
 let pipeTimer = 0;
 
-const pipeWidth = 65;
-const pipeGap = 170;
+const gravity = 0.45;
+const jumpPower = -7;
 const pipeSpeed = 3;
+const pipeGap = 170;
+const pipeWidth = 65;
 
 function resetGame() {
     birdY = 45;
@@ -30,19 +28,22 @@ function resetGame() {
     score = 0;
     pipeTimer = 0;
 
-    scoreText.textContent = score;
+    scoreText.textContent = "0";
+    bird.style.top = birdY + "%";
 
-    pipes.forEach(pipe => {
+    pipes.forEach(function(pipe) {
         pipe.top.remove();
         pipe.bottom.remove();
     });
 
     pipes = [];
-
-    bird.style.top = birdY + "%";
 }
 
-function startGame() {
+function startGame(event) {
+    if (event) {
+        event.stopPropagation();
+    }
+
     resetGame();
 
     gameRunning = true;
@@ -50,25 +51,31 @@ function startGame() {
     startScreen.style.display = "none";
     gameOverScreen.style.display = "none";
 
-    gameLoop();
+    requestAnimationFrame(gameLoop);
 }
 
-function jump() {
-    if (!gameRunning) return;
+function jump(event) {
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
 
-    velocity = jumpPower;
+    if (gameRunning) {
+        velocity = jumpPower;
+    }
 }
 
 function createPipe() {
     const gameHeight = game.clientHeight;
 
-    const minHeight = 80;
-    const maxTopHeight = gameHeight - pipeGap - 80;
+    const minTop = 80;
+    const maxTop = gameHeight - pipeGap - 80;
 
     const topHeight =
-        Math.random() * (maxTopHeight - minHeight) + minHeight;
+        Math.random() * (maxTop - minTop) + minTop;
 
-    const bottomHeight = gameHeight - topHeight - pipeGap;
+    const bottomHeight =
+        gameHeight - topHeight - pipeGap;
 
     const topPipe = document.createElement("div");
     topPipe.className = "pipe top";
@@ -93,7 +100,7 @@ function createPipe() {
     });
 }
 
-function checkCollision(pipe) {
+function collision(pipe) {
     const birdRect = bird.getBoundingClientRect();
     const topRect = pipe.top.getBoundingClientRect();
     const bottomRect = pipe.bottom.getBoundingClientRect();
@@ -113,7 +120,6 @@ function checkCollision(pipe) {
 
 function gameOver() {
     gameRunning = false;
-
     finalScore.textContent = score;
     gameOverScreen.style.display = "flex";
 }
@@ -121,33 +127,28 @@ function gameOver() {
 function update() {
     if (!gameRunning) return;
 
-    // Gerakan burung
     velocity += gravity;
     birdY += velocity * 0.12;
 
     bird.style.top = birdY + "%";
 
-    // Batas atas
     if (birdY <= 0) {
         birdY = 0;
         velocity = 0;
     }
 
-    // Batas bawah
     if (birdY >= 90) {
         gameOver();
         return;
     }
 
-    // Buat pipa
     pipeTimer++;
 
-    if (pipeTimer > 100) {
+    if (pipeTimer >= 100) {
         createPipe();
         pipeTimer = 0;
     }
 
-    // Gerakkan pipa
     for (let i = pipes.length - 1; i >= 0; i--) {
         const pipe = pipes[i];
 
@@ -156,20 +157,20 @@ function update() {
         pipe.top.style.left = pipe.x + "px";
         pipe.bottom.style.left = pipe.x + "px";
 
-        // Tambah skor
-        if (!pipe.passed && pipe.x + pipeWidth < game.clientWidth * 0.25) {
+        if (
+            !pipe.passed &&
+            pipe.x + pipeWidth < game.clientWidth * 0.25
+        ) {
             pipe.passed = true;
             score++;
             scoreText.textContent = score;
         }
 
-        // Cek tabrakan
-        if (checkCollision(pipe)) {
+        if (collision(pipe)) {
             gameOver();
             return;
         }
 
-        // Hapus pipa yang sudah keluar
         if (pipe.x < -pipeWidth) {
             pipe.top.remove();
             pipe.bottom.remove();
@@ -182,28 +183,11 @@ function gameLoop() {
     if (!gameRunning) return;
 
     update();
-
     requestAnimationFrame(gameLoop);
 }
 
-// Tombol mulai
 startButton.addEventListener("click", startGame);
-
-// Tombol main lagi
 restartButton.addEventListener("click", startGame);
 
-// Sentuh layar untuk terbang
-game.addEventListener("touchstart", function(event) {
-    event.preventDefault();
-
-    if (gameRunning) {
-        jump();
-    }
-});
-
-// Klik mouse juga bisa digunakan
-game.addEventListener("mousedown", function() {
-    if (gameRunning) {
-        jump();
-    }
-});
+game.addEventListener("touchstart", jump, { passive: false });
+game.addEventListener("mousedown", jump);
