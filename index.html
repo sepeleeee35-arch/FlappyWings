@@ -2,93 +2,29 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Flappy Wings</title>
-
-    <link rel="stylesheet" href="style.css?v=1001">
+    <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
-    <div id="game">
+<div id="game">
 
-        <div id="score">0</div>
+    <div id="score">0</div>
 
-        <div id="bird">🐦</div>
+    <div id="bird">🐦</div>
 
+    <div id="menu">
+        <h1>Flappy Wings</h1>
+        <p>Game Flappy Wings</p>
 
-        <!-- START SCREEN -->
-
-        <div id="startScreen">
-
-            <h1>Flappy Wings</h1>
-
-            <p>Tekan layar untuk terbang!</p>
-
-            <button
-                id="startButton"
-                type="button"
-                onclick="mulaiGame()"
-            >
-                Mulai
-            </button>
-
-        </div>
-
-
-        <!-- GAME OVER -->
-
-        <div id="gameOverScreen">
-
-            <h1>Game Over</h1>
-
-            <p>
-                Skor:
-                <span id="finalScore">0</span>
-            </p>
-
-            <button
-                id="restartButton"
-                type="button"
-                onclick="mulaiGame()"
-            >
-                Main Lagi
-            </button>
-
-        </div>
-
+        <button id="startButton">MULAI</button>
     </div>
 
+</div>
 
-    <script src="script.js?v=1001"></script>
-
-
-    <!-- PEMBUAT TOMBOL -->
-
-    <script>
-
-        function mulaiGame() {
-
-            console.log("TOMBOL MULAI DITEKAN");
-
-            const startScreen =
-                document.getElementById("startScreen");
-
-            const gameOverScreen =
-                document.getElementById("gameOverScreen");
-
-            startScreen.style.display = "none";
-
-            gameOverScreen.style.display = "none";
-
-            if (typeof startGame === "function") {
-                startGame();
-            }
-
-        }
-
-    </script>
+<script src="script.js"></script>
 
 </body>
 </html>
